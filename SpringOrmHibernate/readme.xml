@@ -1,0 +1,119 @@
+Spring ORM integration using Hibernate:
+---------------------------------------
+Requirements:
+	- Spring 4.0.0.RELEASE, spring-core, spring-context, spring-webmvc, spring-orm
+	- Hibernate 3.6.0.Final
+	- Mysql 5.1.9
+	- Jstl 1.2
+	- commons-dbcp 1.4
+	
+- With this approach we are integrating Spring with Hibernate.We are using hibernateTemplate class provided by spring framework that will perform the persistence operation by using its methods. 
+
+- We are using the below table in mysql database:
+CREATE TABLE `tbl_student` (
+  `ID` int(11) NOT NULL,
+  `NAME` varchar(200) NOT NULL,
+  `EMAIL` varchar(200) NOT NULL
+)
+
+ALTER TABLE `tbl_student`
+  ADD PRIMARY KEY (`ID`);
+
+
+- First we need to know how we declared the dependent objects as beans and there injection process.
+
+- We have declared the following classes as beans as part of persistence-context.xml.
+	- dataSource
+	- sessionFactory
+	- hibernateTemplate
+
+- Below is the configuration approach to declare the dataSource as bean. It uses BasicDataSource class. We also can use BasicDriverManagerDataSource or c3p0DataSource. We will discuss about these two dataSources later.
+
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/test" />
+		<property name="username" value="root" />
+		<property name="password" value="" />
+	</bean>
+
+- Data source configuration mainly contains information about driverClassName, dataBaseUrl, username, password. You need to provide appropriate details related to your database. Also you need to use relevant jdbc specific jars specific to your database. Like here I am using mysql dataabase, so I have used mysql jdbc jar dependency as part of my pom.xml
+	
+- As we have the dataSource we need to build the sessionFactory. So as we know from hibernate that
+we can use annotations to configure our entity class also we can use xml approach for the same using hbm.xml file. Below are the spring based configurations to create the sessionFactory bean.
+
+	<!-- sessionFactory bean configuration when the entity class is configured using hbm.xml file-->
+	<bean id="hibernate3SessionFactory"
+		class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="mappingResources">
+			<list>
+				<value>student.hbm.xml</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<value> hibernate.dialect=org.hibernate.dialect.MySQLDialect </value>
+		</property>
+	</bean>
+
+	I have not used above approach as part of this program. It uses LocalSessionFactoryBean class for sessionFactory implementation
+	
+	<!-- sessionFactory bean configuration when the entity class is annotated file-->
+	<bean id="hibernate3AnnotatedSessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="annotatedClasses">
+			<list>
+				<value>com.spring.command.Student</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.current_session_context_class">thread</prop>
+				<prop key="hibernate.show_sql">false</prop>
+			</props>
+		</property>
+	</bean>
+	
+	Above bean configuration is used as part of our program. It uses AnnotationSessionFactoryBean class for sessionFactory implementation.
+
+- So far we have 2 beans declared. i.e. dataSource and sessionFactory. It is need to rememeber that dataSource has been injected into the sessionFactory. See the below line in the above configuration that does the same.
+
+	<property name="dataSource" ref="dataSource" />
+- Now we have to declare hibernateTemplate as bean. Below is the configuration for the same.
+
+	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">
+		<property name="sessionFactory" ref="hibernate3AnnotatedSessionFactory" />
+	</bean>
+  From the above configuration it is cleared that sessionFactory has been injected as a dependency into hibernateTemplate. hibernateTemplate uses org.springframework.orm.hibernate3.HibernateTemplate as its implementation class.
+
+- Now we have a dao named as DemoDao.java where we declared hibernateTemplate as its data attribute or we can say a property. It must have setters and getters because we are going to inject hibernateTemplate into our Demodao using setter injection. See the below configuration for the same.
+	
+	<bean id="demoDao" class="com.spring.repository.DemoDao">
+		<property name="hibernateTemplate" ref="hibernateTemplate" />
+	</bean>
+
+- So far we have declared the beans as part of persistence-context.xml. 
+
+- Now we need to understand what are the operations that user can perform with this.
+So we are doing just basic operations:
+	1. Insert
+	2. list All
+- As we are very good in simple form controller. So we know when user sends post request with url as /register it is processed by one of the method  in DemoController.java. This method calls the method [save(Student s)] of DemoService.java which in turn calls method [save(Student s)] of DemoDao.java to persist the Student object into the database.
+
+- Now while selecting all the data we are sending GET request with url /list and it processed by one of the method[getAllData(Model model)] in DemoController.java. This method calls the method [loadAll()] of DemoService.java which in turns calls the method [loadAll()] of DemoDao.java. The loadAll() method returns List of Student records from the database. And finally these record list comes to the method [getAllData(Model model)] of DemoController.java.
+Inside the method getAllData(Model model) we bound the retrieved list of students with key students.
+
+	model.addAttribute("students", studentsList);
+	
+	In the listAll.jsp page we display the records using jstl tag and the key as students.
+	<c:forEach var="student" items="${students}">
+		<tr>
+			<td>${student.id}</td>
+			<td>${student.name}</td>
+			<td>${student.email}</td>
+		</tr>
+	</c:forEach>
+
+
