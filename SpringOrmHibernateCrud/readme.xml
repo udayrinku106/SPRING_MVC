@@ -1,0 +1,143 @@
+We have discussed 2 operations:
+1. Persist the data into the database
+2. Get all data from the database.
+
+As compares to yesterday I have designed the application designed to interface approach where the service and dao implements there corresponding interfaces. Just have a look at those interfaces.
+
+public interface IDemoDao {
+
+	public int save(Student s);
+
+	public List<Student> loadAll();
+
+	public int delete(int id);
+
+	public Student getStudentByID(int id);
+	
+	public int update(Student s);
+}
+
+public interface IDemoService {
+	public int save(Student s);
+
+	public List<Student> loadAll();
+
+	public int delete(int id);
+
+	public Student getStudentByID(int id);
+
+	public int update(Student s);
+}
+
+ 
+Today we are going to add 3 more operations.
+1. delete the object by id
+2. get the object by id so that we can edit the object data
+3. update the object
+
+So lets start from front end. 
+
+-Delete operation:
+	For this operation we only have to send the object id to the controller by using an hyper-link [GET request] . So I added an hyper-link like below in listAll.jsp page
+	 
+	<a href="delete-${student.id}-student">Delete</a>
+	 
+	So our request url looks like "/edit-10-student". where 10 is the student id. Now this student id is send to the DemoController where the id is retrieved from the URL using PathVariable approach like below.
+	 
+	@RequestMapping(method = RequestMethod.GET, value = "delete-{id}-student")
+	public String deleteStudentById(@PathVariable("id") int id, Model model) {
+		demoService.delete(id);
+		return "redirect:list";
+	}
+
+	See the string "delete-{id}-student" as part of @RequestMapping contains id so my path variable should retrieve it. That's why I used @PathVariable("id"). So the retrieved data must be populated to some variable. Hence I populated into "int id". Hence the full sysntax for retrieve and populate the id is below.
+	
+	RQEUEST URL: delete-{id}-student
+	RETRIEVE AND POPULATE: @PathVariable("id") int id
+	
+	I am sure you can understand the code written inside the above method. It simple calls the service and service calls the dao. Lets have a look at the method of the dao that performs the delete operation.
+	
+	public int delete(int id) {
+		// TODO Auto-generated method stub
+		System.out.println("delete by id");
+		Query query = hibernateTemplate.getSessionFactory().openSession()
+				.createQuery("delete from Student where id =" + id);
+		return query.executeUpdate();
+
+	}
+
+	once the above code is executed the controlller will redirect to you the listAll.jsp page due to the below in the controller method.
+	
+	return "redirect:list";
+	
+	
+- Get and Update Operation.
+	So before editing the data we have to get the data from the database by using object id. For this we have designed a hyper-link in the listAll.jsp page as below.
+	
+	<a href="edit-${student.id}-student">Edit</a>
+	
+	Let's assume we are sending edit get request on "edit-10-student". where 10 is the student id.
+	
+	Now this request[GET request] will be handled by the below method in the controller.
+	// gets a single student by id, so that we can edit
+	
+	@RequestMapping(method = RequestMethod.GET, value = "edit-{id}-student")
+	public String getStudentById(@PathVariable("id") int id, Model model) {
+		Student s = demoService.getStudentByID(id);
+		model.addAttribute("studentCommandKey", s);
+		return "registerView";
+	}
+	
+	Above method again gets the object id from the url using Path variable approach as explained earlier. Then it passes the id to service and then to dao that retrieves the object based upon the id and returns the student  object to the controller. Now the object is bound with a key and the response is rendered to the registerView.jsp page that displays the text boxes populated with the data.
+	
+	Now one thing I will like to inform you that we have added an hidden field as part of form that keeps the id.
+	
+	<form:input path="id" type="hidden" /> code is written as part of the form. If you use hidden field it won't be displayed to the user.
+	
+	<form:form  commandName="studentCommandKey">
+	<form:input path="id" type="hidden" />
+		Name
+		<form:input path="name" />
+		<br /> Email
+		<form:input path="email"  />
+		<br /> <input type="submit" value="submit" />
+	</form:form>
+
+	Now when user updates some data into the input field and then press submit a POST request will be send to the controller with the url "edit-10-student". This requets is handled by the below method inside the controller.
+	
+	@RequestMapping(method = RequestMethod.POST, value = "edit-{id}-student")
+	public String updateStudent(
+			@ModelAttribute("studentCommandKey") Student s, Model model) {
+		String name = s.getName();
+		String email = s.getEmail();
+
+		
+		
+		int result= demoService.update(s);
+		
+		
+		String message = "You have updated with:<br/> Name: " + name
+				+ "<br/> Email: " + email;
+		model.addAttribute("messageKey", message);
+		return "success";
+	}
+	
+	Above code calls the service and the service calls the dao. Below is the code for dao.
+	
+	public int update(Student s) {
+		// TODO Auto-generated method stub
+		System.out.println("update");
+		Query query = hibernateTemplate
+				.getSessionFactory()
+				.openSession()
+				.createQuery(
+						"update Student set name=:name,email=:email where id=:id");
+		query.setString("name", s.getName());
+		query.setString("email", s.getEmail());
+		query.setInteger("id", s.getId());
+
+		return query.executeUpdate();
+
+	}
+	
+	once the above code is executed you wil be returened to the success page with a message.
