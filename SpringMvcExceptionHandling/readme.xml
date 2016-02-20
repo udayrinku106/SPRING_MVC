@@ -1,0 +1,97 @@
+SPRING EXCEPTION HANDLING
+-------------------------
+Today I am going to discuss about spring exception handling. 
+
+- Our application can throw runtime exceptions or errors.
+
+- Let say our application throwing a constraint violation exception at run time during the operations in repository layer. Then this exception will be propagated to service and then to controller. If we have not handled this exception in any of the layers [not in controller, service, repository] then this will be delievered to spring framework and spring framework will throw it to servlet container. so servlet container can't handle this exception and we will get an ugly error page as response.
+
+- So we need to handle these exceptions using spring provided exception handling techniques. To achieve this we will use user-defined-exceptions mechanism in java.
+
+- Spring Framework has provided 2 annotations to handle exceptions.
+
+	-@ControllerAdvice
+	-@ExceptionHandler
+	
+- We will implement above 2 in our application later. Let's understand how to write a user-defined-exceptions in java.
+	
+   public class DeviceNotFoundException extends RuntimeException {
+	public DeviceNotFoundException(String arg0) {
+		super(arg0);
+		// TODO Auto-generated constructor stub
+	}
+
+}
+
+- If you see the above code , it is simple a java class that extends the RuntimeException class because our exception will be thrown at runtime based upon some condition. Remember I used the word condition here. we know the condition, and we know what exception need to be thrown. Just we have to handle those exception and to send some user understandable data.
+
+- If you ask me one thing that we dont know when the constrain violation exception will come then what exception we have to throw. So my answer will be like this: see when constraint violation occurs spring throws DataAccessException[remember this] and it is a runtime exception. Then who will catch this exception? Answer is service layer because service layer has called the dao. I will recommend don';t wrote too much try/catch block in dao. It will make your dao logic complicated. So handle those in service. I know which operation I am doing so that the constraint violation exception came. That is when I am adding a new record to the database. So below will be my code in the service.
+
+public int registerStudent(Student s)
+{
+	try
+	{
+		dao.saveStudent(s);
+	}
+	catch(DataAccessException ex)
+	{
+		if(ex.getClass()==ConstrainViolationException.class)
+		throw new StudentExecption("User alreay exists in the database with the given email")
+	}
+}
+
+It is noted that StudentExecption is a user defined exception class which is exact similar to the above user-defined-exception class I explained.
+
+- As we are throwing user-defined-exception it will also throw an ugly error page after exception propagation from layer to layer. So we need to stop this. Then how we can stop this,then  think a little bit. 
+
+- I decided that I will write a class that contains some code which will execute when the exception happens. That class is called a advice class. So I have to annotate with @ControllerAdvice because instead of control coming to controller from service, it will go to the @ControllerAdvice annotated class. Inside that @ControllerAdvice class we must have some method that will be excuted specific to certain exception and that method must be annotated with @ExceptionHandler which must specify the user-defined-exception class. To understand this I will show you below code.
+
+@ControllerAdvice
+public class AppExceptionHandler {
+/*
+The class is annotated with @ControllerAdvice. This annotaion will be detected if you have added <mvc:annotaion-driven/> as part of dispatcher-servlet.xml and below mvc namespace also required in the dispatcher-servlet.xml. For @ExceptionHandler also you have to do the same. This class indicates that when exception occurs control will come to this class instead of Controller.
+*/
+	@ExceptionHandler(DeviceNotFoundException.class)
+	public ModelAndView DeviceNotFoundHandlerMethod(DeviceNotFoundException ex) {
+	
+		ErrorInfo eInfo=new ErrorInfo(404, "DEVICE_NOT_FOUND", "Device not found in the database", "google.co.in");
+		// log the above errorInfo object into some file for further reference of //developers
+		ModelAndView model=new ModelAndView();
+		model.addObject("error", eInfo);
+		model.setViewName("error");
+		return model;
+	}
+/*
+Above method will be executed when the user-defined-exception DeviceNotFoundException occurs at runtime. Inside that method if you see we have created a ErrorInfo object[ user-defined-object]. Into the ErrorInfo object we have popullated below things:
+
+ErrorCode: It is a http error code
+ErrorName: It indicates to the user name of the error
+ErrorMessage: It gives some information about the exception to user.
+ErrorLink: More descriptive information abiut error in html format.
+
+After creating the error object we need to render this to user.
+
+ModelAndView model=new ModelAndView(); // created a model and view object of spring. It can carry both data and the view name.
+		model.addObject("error", eInfo); // carries the model data[errorInfo object]
+		model.setViewName("error");// carries the view page name[error.jsp]
+		return model;// and finally we returned the model.
+		
+So user will see the error.jsp page with some valoida information so that he/she can contact the administrator and explain what error message he/she is getting. according to that we can resolve the issue.
+
+It is noted that above code can handle only DeviceNotFoundException not any other exception. For each exception you have to write the handlers.
+*/
+	@ExceptionHandler(Throwable.class)
+	public ModelAndView defaultAppExceptionHandlerMethod(Throwable ex) {
+	
+		ErrorInfo eInfo=new ErrorInfo(500, "GENERIC_EXCEPTION", "Some Unknown Error Occured While Processin Your Request! Please Contact Support. 1800 102 444", "google.co.in");
+		ModelAndView model=new ModelAndView();
+		model.addObject("error", eInfo);
+		model.setViewName("error");
+		return model;
+	}
+/*
+	Some times our application falls into some exception for which we have not wriiten any handler, so in that case above method will be executed. You can see we passed Throwable as parameter to the @ExceptionHandler annotation which is the parent class of exception handling in java.
+*/
+}
+
+- For more understandability run and deploy the application.
