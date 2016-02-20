@@ -1,0 +1,108 @@
+There are two types of JAXWS RI implementation consumers
+1.Stub Based
+2.Disptach API Based
+
+STUB BASED CONSUMER IN JAXWS RI IMPLEMENTATION
+----------------------------------------------
+>set JAVA_HOME=C:\Program Files\Java\jdk1.5.0_10
+>set path=%JAVA_HOME%\bin
+>set path=%path%;C:\Sun\jwsdp-2.0\jaxws\bin
+
+Note: all the above commands should run in the root directory of the project:
+
+Now in the WEB-INF\lib put all the jars provided by jaxws
+
+From the provider I have the wsdl location as below:
+
+http://localhost:5555/CFA_BOOK_SEARCH_SOAP_FAULT/bookservice?wsdl
+
+Now run the wsimport tool at the project root directory
+
+>wsimport -d src -keep -verbose http://localhost:5555/CFA_BOOK_SEARCH_SOAP_FAULT/bookservice?wsdl
+
+The above command is same for provider in contract first approach
+
+It will generate types(input and output binding classes) and wsdl(service and sei interfaces)
+
+Here is below my consumer application with stub based approach:
+package com.oxford.build.consumers;
+
+import java.util.List;
+
+import javax.xml.ws.Service;
+
+import com.oxford.book.types.BookStore;
+import com.oxford.book.types.BookStoreList;
+import com.oxford.book.types.Criteria;
+import com.oxford.book.wsdl.FieldError;
+import com.oxford.book.wsdl.OxforBookLibraryService;
+import com.oxford.book.wsdl.OxfordBookLibrary;
+
+public class StubBasedConsumer {
+		public static void main(String[] args) throws FieldError {
+			OxforBookLibraryService service=new OxforBookLibraryService();
+			OxfordBookLibrary port=service.getOxfordBookLibrarySOAPPort();
+			
+			Criteria c=new Criteria();
+			c.setBookName("C");
+			c.setCourseName("MCA");
+			
+			BookStoreList bsl=port.searchBook(c);
+			List<BookStore> listBookStore=bsl.getListBookStore();
+			for(BookStore bs:listBookStore)
+			{
+			System.out.println(bs.getBookStoreName()+"--"+bs.getBookStoreName()+"--"+bs.getBookPrice());
+			}
+			
+			
+		}
+}
+
+DISPATCHED API CONSUMER IN JAXWS RI IMPLEMENTATION
+--------------------------------------------------
+From the provider I have the wsdl location as below:
+
+http://localhost:5555/CFA_BOOK_SEARCH_SOAP_FAULT/bookservice?wsdl
+
+put this wsdl in soap and check the functionality of webservice
+
+Now see the request soap message structure in soap ui, we have to develop this
+soap message in our consumer application using saaj api.
+
+below is my consumer application to access the provider.
+
+package com.oxford.build.consumers;
+
+import java.util.List;
+
+import javax.xml.ws.Service;
+
+import com.oxford.book.types.BookStore;
+import com.oxford.book.types.BookStoreList;
+import com.oxford.book.types.Criteria;
+import com.oxford.book.wsdl.FieldError;
+import com.oxford.book.wsdl.OxforBookLibraryService;
+import com.oxford.book.wsdl.OxfordBookLibrary;
+
+public class StubBasedConsumer {
+		public static void main(String[] args) throws FieldError {
+			OxforBookLibraryService service=new OxforBookLibraryService();
+			OxfordBookLibrary port=service.getOxfordBookLibrarySOAPPort();
+			
+			Criteria c=new Criteria();
+			c.setBookName("C");
+			c.setCourseName("MCA");
+			
+			BookStoreList bsl=port.searchBook(c);
+			List<BookStore> listBookStore=bsl.getListBookStore();
+			for(BookStore bs:listBookStore)
+			{
+			System.out.println(bs.getBookStoreName()+"--"+bs.getBookStoreName()+"--"+bs.getBookPrice());
+			}
+			
+			
+		}
+}
+
+
+

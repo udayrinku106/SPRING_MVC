@@ -1,0 +1,202 @@
+APACHE AXIS IMPLEMENTATION OF JAX WS ENVIRONMENT SET UP
+-------------------------------------------------------
+Download the following zip files:
+1.axis2-1.6.1-bin (Binary distribution)
+2.axis2-1.6.1-war (war distribution)
+
+Now first extract the axis2-1.6.1-bin and you will get axis2-1.6.1 directory.
+put this directory inside c: drive
+
+
+Now extract the axis2-1.6.1-war and you will get axis2 directory.
+put this directory inside webapps of tomcat server
+
+To test the axis2 war application:
+
+Start your tomcat server by using startup.bat(u may need to change port of tomcat in conf/server.xml)
+
+Now type the url:
+
+localhost:8888/axis2
+
+This will show the admin panel of axis2
+
+APACHE AXIS IMPLEMENTATION OF JAX WS CFA PROVIDER (DOCUMENT /LITERAL)
+---------------------------------------------------------------------
+
+>Contract First Approach
+>To track the courier of bluedart
+
+interface BlueDart
+{
+	CourierDetails track(CourierSearch cSearch) throws CourierNotFoundException
+}
+
+class CourierDetails
+{
+	private int courierId;
+	private String senderNm;
+	private String receiverNm;
+	private List<Status> status;
+	
+}
+class status
+{
+	private Date lastUpdate;
+	private String lastLocation;
+}
+class CourierSearch
+{
+private int CourierId;
+private String SenderName;
+
+}
+
+class CourierNotFoundException
+{
+  FieldError fError;
+}
+
+class FieldError
+{
+FieldName;
+errorCode;
+errorMessage;
+
+}
+
+
+Generate the wsdl as below(keep inside wsdl/BlueDartCourierTracker.wsdl):
+
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<wsdl:definitions xmlns:bct="http://www.bluedart.com/CourierTracker/types"
+	xmlns:bcw="http://www.bluedart.com/CourierTracker/wsdl" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	name="BlueDartCourierTracker" targetNamespace="http://www.bluedart.com/CourierTracker/wsdl">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://www.bluedart.com/CourierTracker/types"
+			elementFormDefault="qualified">
+			<!-- <xsd:element name="NewOperation"> <xsd:complexType> <xsd:sequence> 
+				<xsd:element name="in" type="xsd:string"/> </xsd:sequence> </xsd:complexType> 
+				</xsd:element> <xsd:element name="NewOperationResponse"> <xsd:complexType> 
+				<xsd:sequence> <xsd:element name="out" type="xsd:string"/> </xsd:sequence> 
+				</xsd:complexType> </xsd:element> -->
+
+			<xsd:complexType name="Status">
+				<xsd:sequence>
+					<xsd:element name="lastUpdated" type="xsd:date"></xsd:element>
+					<xsd:element name="lastLocation" type="xsd:string"></xsd:element>
+				</xsd:sequence>
+			</xsd:complexType>
+
+			<xsd:complexType name="StatusList">
+				<xsd:sequence>
+					<xsd:element name="listOfStaus" type="bct:Status"
+						minOccurs="1" maxOccurs="unbounded"></xsd:element>
+				</xsd:sequence>
+			</xsd:complexType>
+			<xsd:complexType name="CourierDetails">
+				<xsd:sequence>
+					<xsd:element name="courierId" type="xsd:int"></xsd:element>
+					<xsd:element name="senderNm" type="xsd:string"></xsd:element>
+					<xsd:element name="receiverNm" type="xsd:string"></xsd:element>
+					<xsd:element name="statusList" type="bct:StatusList"></xsd:element>
+				</xsd:sequence>
+			</xsd:complexType>
+
+			<xsd:complexType name="CourierSearch">
+				<xsd:element name="courierId" type="xsd:int"></xsd:element>
+				<xsd:element name="senderNm" type="xsd:string"></xsd:element>
+			</xsd:complexType>
+
+
+			<xsd:element name="track">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="courierSearch" type="bct:CourierSearch"></xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+
+			<xsd:element name="trackResponse">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="courierDetails" type="bct:CourierDetails"></xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+
+			<xsd:element name="FieldError">
+				<xsd:complexType>
+					<xsd:sequence>
+					<xsd:element name="fieldNm" type="xsd:string"></xsd:element>
+					<xsd:element name="errorCode" type="xsd:string"></xsd:element>
+					<xsd:element name="errorMessage" type="xsd:string"></xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="BlueDart_track">
+		<wsdl:part element="bct:track" name="in" />
+	</wsdl:message>
+	<wsdl:message name="BlueDart_trackResponse">
+		<wsdl:part element="bct:trackResponse" name="out" />
+	</wsdl:message>
+	<wsdl:message name="CourierNotFoundException">
+		<wsdl:part name="fieldError" element="bct:FieldError"></wsdl:part>
+	</wsdl:message>
+	<wsdl:portType name="BlueDartCourierTracker">
+		<wsdl:operation name="track">
+			<wsdl:input message="bcw:BlueDart_track" />
+			<wsdl:output message="bcw:BlueDart_trackResponse" />
+			<wsdl:fault name="fault_1" message="bcw:CourierNotFoundException"></wsdl:fault>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="BlueDartCourierTrackerSOAP11Binding"
+		type="bcw:BlueDartCourierTracker">
+		<soap:binding style="document"
+			transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="track">
+			<soap:operation soapAction="http://www.bluedart.com/CourierTracker/wsdl/track" />
+			<wsdl:input>
+				<soap:body use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" />
+			</wsdl:output>
+			<wsdl:fault name="fault_1">
+				<soap:fault name="fault_1" use="literal" />
+			</wsdl:fault>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="BlueDartCourierTracker">
+		<wsdl:port binding="bcw:BlueDartCourierTrackerSOAP11Binding"
+			name="BlueDartCourierTrackerSOAPPort">
+			<soap:address location="http://www.example.org/" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>
+
+
+
+Now go to c drive then into axis2-1.6.1
+
+open the cmd
+
+
+>set path=%path%;c:\axis2-1.6.1\bin
+
+>wsdl2java -help
+
+Now move to project root directory
+
+>wsdl2java -S src -s -d jaxbri -ss -sd -ssi -R src\META-INF -uri wsdl\BlueDartCourierTracker.wsdl
+
+
+
+
+
+
+

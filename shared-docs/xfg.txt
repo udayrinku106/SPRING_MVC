@@ -1,0 +1,132 @@
+Developing a provider using contract first approach with document / wrapped
+
+public interface MedicineFinder {
+
+public MedicineList search(
+			Criteria criteria,Store store);
+
+}
+
+
+We have to develope a wsdl for this interface.
+Medicine list is a collection type.
+
+MedicineList=List<Medicine>//important
+
+So here is the wsdl for above interface:
+
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<wsdl:definitions xmlns:apw="http://www.apollo.com/apollopharamacy/wsdl"
+	xmlns:apt="http://www.apollo.com/apollopharamacy/types" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	name="apollopharamacyMedicineFinderService" targetNamespace="http://www.apollo.com/apollopharamacy/wsdl">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://www.apollo.com/apollopharamacy/types" elementFormDefault="qualified">
+			<!-- <xsd:element name="NewOperation"> <xsd:complexType> <xsd:sequence> 
+				<xsd:element name="in" type="xsd:string"/> </xsd:sequence> </xsd:complexType> 
+				</xsd:element> <xsd:element name="NewOperationResponse"> <xsd:complexType> 
+				<xsd:sequence> <xsd:element name="out" type="xsd:string"/> </xsd:sequence> 
+				</xsd:complexType> </xsd:element> -->
+
+			<xsd:complexType name="Criteria">
+				<xsd:sequence>
+					<xsd:element name="medicineName" type="xsd:string"  />
+					<xsd:element name="drugsId" type="xsd:string" />
+					<xsd:element name="generic" type="xsd:boolean" />
+					<xsd:element name="manufacturer" type="xsd:string" />
+					<xsd:element name="units" type="xsd:int" />
+				</xsd:sequence>
+			</xsd:complexType>
+
+			<xsd:complexType name="Store">
+				<xsd:sequence>
+					<xsd:element name="storeId" type="xsd:string" />
+					<xsd:element name="agent" type="xsd:string" />
+				</xsd:sequence>
+			</xsd:complexType>
+
+
+			<xsd:complexType name="Medicine">
+				<xsd:sequence>
+					<xsd:element name="medicineName" type="xsd:string" />
+					<xsd:element name="generic" type="xsd:boolean" />
+					<xsd:element name="manufacturer" type="xsd:string" />
+					<xsd:element name="availableQty" type="xsd:int" />
+					<xsd:element name="pricePerUnit" type="xsd:float" />
+				</xsd:sequence>
+			</xsd:complexType>
+
+				<xsd:complexType name="MedicineList">
+				<xsd:sequence>
+				<xsd:element name="medicineList" type="apt:Medicine" minOccurs="0" maxOccurs="unbounded"></xsd:element>
+				</xsd:sequence>
+				</xsd:complexType>
+			
+
+			<xsd:element name="search">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="criteria" type="apt:Criteria"></xsd:element>
+						<xsd:element name="store" type="apt:Store"></xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+			
+			   
+			
+			<xsd:element name="searchResponse">
+			<xsd:complexType>
+			<xsd:sequence>
+			<xsd:element name="ListOfMedicine" type="apt:MedicineList"></xsd:element>
+			</xsd:sequence>
+			</xsd:complexType>
+			</xsd:element>
+			
+			
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="MedicineFinder_SearchRequest">
+		<wsdl:part element="apt:search" name="in" />
+	</wsdl:message>
+	<wsdl:message name="MedicineFinder_SearchResponse">
+		<wsdl:part element="apt:searchResponse" name="out" />
+	</wsdl:message>
+	<wsdl:portType name="MedicineFinder">
+		<wsdl:operation name="search">
+			<wsdl:input message="apw:MedicineFinder_SearchRequest" />
+			<wsdl:output message="apw:MedicineFinder_SearchResponse" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="apollopharamacySOAPBinding" type="apw:MedicineFinder">
+		<soap:binding style="document"
+			transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="search">
+			<soap:operation
+				soapAction="http://www.apollo.com/apollopharamacy/wsdl/search" />
+			<wsdl:input>
+				<soap:body use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" />
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="apollopharamacyMedicineFinderService">
+		<wsdl:port binding="apw:apollopharamacySOAPBinding" name="apollopharamacySOAPPort">
+			<soap:address location="http://www.apollo.com/" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>
+
+
+>set JAVA_HOME=C:\Program Files\Java\jdk1.5.0_10
+>set path=%JAVA_HOME%\bin
+>set path=%path%;C:\Sun\jwsdp-2.0\jaxws\bin
+
+Note: all the above commands should run in the root directory of the project:
+
+Now in the WEB-INF\lib put all the jars provided by jaxws (c:\jwsdp-2.0\jaxws)
+
+For contract first approach we have to run the wsgen tool privided by jaxws ri implementation.
+
+
