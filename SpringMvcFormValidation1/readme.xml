@@ -1,0 +1,89 @@
+SPRING VALIDATIONS USING VALIDATION API-PART1
+---------------------------------------------
+As we know all about the Simple-Form-Controller where we can send the GET as well as POST request. So our form needs to be validated when the user submits the form with POST request.
+
+That means there must some mechanism during POST request in our code that can do the validation process.
+
+For validation we are using below things:
+
+- Hibernate Validator provided annotations in command class [ Student.java] and the below is the require dependencies.
+		
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>4.2.0.Final</version>
+		</dependency>
+		
+- message.properties file for more customized error messages.
+- @Valid annotation provided by javax that triggers your validation process. So that you can validate the input data against the validation api rules specified by your annotations or some custom validators.
+- Inside the post method you have to check the is there some error list as part of BindingResult or not. If errors are there then return the control back to the view page.while returning to the view page the validation error messages will be populated from the BindingResult result and will be displayed as validation errors.
+- messages.properties file that contains the errror messages.
+
+Now let's understand the code, how we have implemented the validation process.
+
+- Below is the code in our command class that uses annotations of hibernate-validator to validate the data.
+
+	public class Student {
+	
+	@NotEmpty
+	@Email
+	private String email;
+	// For email we have declared the error messages in properties file.
+	
+	@NotEmpty(message = "Please enter your password.")
+	@Size(min = 6, max = 15, message = "Your password must between 6 and 15 characters")
+	private String password;
+	// Here inside annotation  tag we specified the error message
+	
+	@Range(min = 1, max = 9) 
+	private int securityKey;
+	// We specified the error message as part of messages.properties file
+	
+	// getters and setters
+	}
+
+- As I explained earlier that inside POST request we have to write some logic so that it can return the call to the view page again. so below is the code is inside controller.
+
+	@RequestMapping(value="login",method=RequestMethod.POST)
+	public String processLogin(@ModelAttribute("loginStudentForm") @Valid Student s,BindingResult result,Model model)
+	{
+	// in the above method we have the BindingResult that can contain the error list and 
+	// can check the existence of any error.
+	
+		if(result.hasErrors())// here we are doing logical check for error existence
+			return "login"; // here we are returning the control back to the view page.
+		
+		model.addAttribute("student", s);// this part will be executed only when there //is no validation error.
+		return "success";
+	}
+	
+	As you can see the above code contains @Valid annotation.
+
+- Below is the messages.properties that contains error messages.
+##############################
+NotEmpty.loginStudentForm.email=Please enter your e-mail.  
+Email.loginStudentForm.email=Your e-mail is incorrect.  
+Range.loginStudentForm.securityKey = Security Key value must be between 1 and 9
+typeMismatch.securityKey= Security Key Must Be an Integer always
+
+# below some valid key values for error messages
+
+#temperature.blank=Temperature is blank
+
+#typeMismatch.temperature=Enter Numeric Values Only
+#################################
+
+- we also need to configure messageSource as bean, so that it can read messages from file messages.properties. Below is the configuration for declaring message source
+
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+
+		<property name="basename" value="/WEB-INF/messages" />
+
+	</bean>
+
+- You can find above configuration as part of dispatcher-servlet.xml
+
+- as we are using English as default language as part of browser local. So it looks for a file mentioned by basename in above configuration. i.e it looks for messages.properties file. Similarly if we have chinesse local say [ch_Zn] then it will look for a file messages_ch_Zn.properties. These are all internationalization concepts in spring.
+
+- now run and deploy your application.
