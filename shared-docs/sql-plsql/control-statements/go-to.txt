@@ -1,0 +1,8 @@
+SET SERVEROUTPUT ON SIZE 1000000;
+BEGIN 
+  GOTO label_1;
+  DBMS_OUTPUT.PUT_LINE('Right after the GOTO statement');
+  <<label_1>>
+  DBMS_OUTPUT.PUT_LINE('It is here!');
+END;
+/
