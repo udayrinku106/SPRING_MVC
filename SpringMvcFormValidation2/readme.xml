@@ -1,0 +1,187 @@
+MVC FORM VALIDATION2:
+---------------------
+
+As part of this we have a form. and the command class is Form.class available under com.spring.model. The user interface form contains the below input fields.
+
+As all we know from simple form controller that path="fieldName" , it means path name is same as the field name of command object. we should keep this in mind while going through the example.
+
+Name: Textfield [required validation]
+
+	html code:
+				<td>Enter your name:</td>
+				<td><form:input path="name" /></td>
+				<td><form:errors path="name" cssStyle="color: #ff0000;"/></td>
+
+Email: Textfield [email validation]
+	
+	html code:
+				<td>Enter your mail:</td>
+				<td><form:input path="email" /></td>
+				<td><form:errors path="email" cssStyle="color: #ff0000;" /></td>
+	
+Gender: radio buttons [ select only one validation]: List type
+
+	html code:
+				<td>Enter your gender</td>
+				<td><form:radiobuttons path="gender" items="${genders}" /></td>
+				<td><form:errors path="gender" cssStyle="color: #ff0000;"/></td> 
+				
+	It contains more than one value that needs to be displayed to the user. So it is a list.
+	And again user has to select only one gender. So we take radio button.
+	
+	java code: 
+				List<String> genders = new ArrayList<String>();
+				genders.add("Male");
+				genders.add("Female");
+				model.addAttribute("genders", genders);
+				
+	If you see in 
+	html : items="${genders}" and in 
+	java code : the model attribute key is "genders". 
+	That means items are mapped with the model attribute key.
+	
+	And the path="gender". That means it must be a field in command object so that it can hold the user submitted gender.
+			
+Password: Password field [required validation]
+	
+	html code:
+				<td>Enter a password:</td>
+				<td><form:password path="password"  showPassword="true"/></td>
+				<td><form:errors path="password" cssStyle="color: #ff0000;"/></td>
+				
+Conf password: Password field [ password compare validation]
+	
+	html code:
+				<td>Confirm your password:</td>
+				<td><form:password path="passwordConf" showPassword="true"/></td>
+				<td><form:errors path="passwordConf" cssStyle="color: #ff0000;"/></td>
+				
+Courses: checkboxes [ select at least 2 validation]: List type
+	html code: 
+				<td>Choose the courses you like:</td>
+				<td><form:checkboxes path="courses" items="${courses}" /></td>
+				<td><form:errors path="courses" cssStyle="color: #ff0000;"/></td> 
+	
+	Courses contains more than one value which needs to be display to the user. So we take it as a list. Again user is allowed to select at least 2 courses. So we take checkbox in html and list in java command object.
+	
+	java code:
+				List<String> courses = new ArrayList<String>();
+				courses.add("Maths");
+				courses.add("Physics");
+				courses.add("Geometry");
+				courses.add("Algebra");
+				courses.add("Painting");
+				model.addAttribute("courses", courses);
+				
+	If you see in
+	html: items="${courses}" and in
+	java code: the model attribute key is courses.
+	
+	And the path="courses". That means it must be a field in command object so that it can hold the user submitted courses. But this fiedl is a list type in the command class.
+				
+Tutor: dropdownlist [required validation]
+
+	html code: 
+				<td>Please select your tutor:</td>
+				<td><form:select path="tutor">
+					  <form:option value="" label="--Select Tutor--" />
+					  <form:options items="${tutors}" />
+				       </form:select>
+                </td>
+				<td><form:errors path="tutor" cssStyle="color: #ff0000;" /></td>
+				
+				
+	tutor contains more than one value which needs to be display to the user. So we take it as a list. Again user is allowed to select 1 of the tutor. So we take dropdown list in html. we also can take radio button for this but it doesn't makes any sense.
+	
+	java code:
+					List<String> tutors = new ArrayList<String>();
+					tutors.add("Mrs Smith");
+					tutors.add("Mr Johnson");
+					tutors.add("Mr Clarks");
+					model.addAttribute("tutors", tutors);
+					
+As we are doing validations, so we have validation messages in a properties file with key and value. It is note that key and value can be any thing as per requirement. Key is not related to any of the UI field names/control names. So below are the messages in validation.properties.
+
+valid.name= Please type your name
+valid.gender = Please select your gender!
+valid.email=Please type a correct email
+valid.password=Please select a password
+valid.passwordConf=Please confirm your password
+valid.passwordConfDiff=Your password is different
+valid.courses = Please select at least two courses!
+valid.tutor=Please choose your tutor! 
+
+As I earlier said that we have to declare a bean , so that it can locate the properties files.
+so below is the configuration in dispatcher-servlet.xml
+
+		<bean id="messageSource"
+		class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basename" value="validation" />
+		</bean>
+		
+At this moment default locale is en_US. So it looks for file "validation" under classpath. So we kept this file at src/main/resources. If it gets the chinesse locale[zh_CN] then it will pick messages from a file "validation_zh_CN.properties".
+
+So the above bean configuration will work for any locale in the world. So this is a concept of i18n.
+
+Now to validate the input data we have written a validator class. And also declare the same class as bean inside dispatcher-servlet.xml.
+
+<bean id="formValidator" class="com.spring.validator.FormValidator" />
+
+Instead of this configuration you can also use @Component annotation that will make the above class as bean.
+
+We have a class FormValidator implements Validator. 
+This class has overridden 2 methods: 
+
+boolean supports(Class<?> paramClass),
+void validate(Object obj, Errors errors)
+
+if the supports(..) returns true then only the validate(..) is called.
+
+Inside validate(..) we have written the validation logic. For example for empty field validation we use below code.
+
+	ValidationUtils.rejectIfEmptyOrWhitespace(errors, "name", "valid.name");
+
+		If u see in above the first parameter is errors which is of type  org.springframework.validation.Errors
+
+		Above code adds an error message to the error list with the reference of org.springframework.validation.Errors.
+
+		The second parameter is the field-name [command object attribute] in the UI.
+
+		The third parameter is the key in the validation.properties file against which we have kept an error message.
+
+		
+Similarly we add error message by comparing the actual password and confirm password using the below code:
+
+	errors.rejectValue("passwordConf", "valid.passwordConfDiff");
+	
+
+As we have written the validator class. We need to bind this to the controller. so that @Valid will try to validate the input command object it will look for a validator in the WebDataBinder. So with the help @InitBinder and WebDataBInder we have set the validator bean.
+
+See the below code:
+	
+	@Autowired
+    @Qualifier("formValidator")
+    private Validator validator;
+	// it looks for a bean class whose id is qualifier value that is "formValidator" [ bean id of our validator class declared in dispatcher-servlet.xml] and the class must be implemented the "validator" interface.
+	
+	@InitBinder
+    private void initBinder(WebDataBinder binder) {
+        binder.setValidator(validator);
+    }
+	
+
+Read and Run the code.
+
+
+Assignments:
+
+Consider a registration form for an Online Examination. It takes name,email,mobile number, password,confirm password, gender, Select at least 3 subjects from 5 subjects such as [C,CPP,JAVA,DS,CCNA].
+
+For mobile number : 
+required field validation when empty. 
+only numeric is allowed when user tries to enter any string or character data.
+And the strength of mobile number should be 10.[not below nor higher than 10]
+
+
+
+
