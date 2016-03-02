@@ -1,0 +1,105 @@
+SPRING MVC INTERCEPTORS
+-----------------------
+In servlets we have filters those are executed durign a request to the servlet.
+
+Similary we have interceptors in spring mvc, but these are executed when request flow is to a controller. Than means request flow is in the followoing manner.
+
+0- filters
+1- dispatcher servlet
+2- interceptors
+3- controllers
+
+HandlerInterceptor(I) – an interface, which must be implemented by the Spring interceptor classes, has the following three methods.
+
+preHandle(…) – called just before the controller
+postHandle(…) – called immediately after the controller
+afterCompletion(…) – called just before sending response to view
+
+So below is the basic code for custom interceptor.
+
+code:
+		public class LoginInterceptor implements HandlerInterceptor {
+
+					public void afterCompletion(HttpServletRequest arg0,
+							HttpServletResponse arg1, Object arg2, Exception arg3)
+							throws Exception {
+						// TODO Auto-generated method stub
+						
+					}
+
+					public void postHandle(HttpServletRequest arg0, HttpServletResponse arg1,
+							Object arg2, ModelAndView arg3) throws Exception {
+						// TODO Auto-generated method stub
+						
+					}
+
+					public boolean preHandle(HttpServletRequest arg0, HttpServletResponse arg1,
+							Object arg2) throws Exception {
+						// TODO Auto-generated method stub
+						return false;
+					
+					/*
+					Note:
+					if you return this as false then your request will not proceed further. So make it true for further request processing into the controller.
+					
+					}
+
+			}
+			
+In above we have overridden 3 methods but we want out of three only some of the has to be overridden. So we have to use HandlerInterceptorAdapter(C) of spring , which is the implementation class for HandlerInterceptor(I)
+
+code:
+		public class TransactionInterceptor extends HandlerInterceptorAdapter {
+
+			@Override
+			public boolean preHandle(HttpServletRequest request,
+					HttpServletResponse response, Object handler) throws Exception {
+				// TODO Auto-generated method stub
+				return super.preHandle(request, response, handler);
+			}
+
+		}
+
+
+Interceptor can be configured to execute in two ways:
+1- execute for all requests to the controller
+2- map to specific url requests to the controller.
+
+If there are multiple interceptors configured, preHandle() method is executed in the order of configuration whereas postHandle() and afterCompletion() methods are invoked in the reverse order.
+
+Below is the configuration approach for interceptors:
+
+ <!-- Configuring interceptors based on URI -->
+    <interceptors>
+        <interceptor>
+            <mapping path="/some-url" />
+            <beans:bean class="com.spring.interceptors.TransactionInterceptor"></beans:bean>
+        </interceptor>
+    </interceptors>
+
+But we are going to learn with annotation approach. You can try by your own for config approach.
+
+In annotation approach we have overridden the below method to register the interceptors.
+
+@Override
+public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(new LoggingInterceptor()); // EXECUTES FOR ANY REQUEST or URL PATTERN
+    registry.addInterceptor(new AuditInterceptor());// EXECUTES FOR ANY REQUEST or URL PATTERN
+	registry.addInterceptor(new TransactionInterceptor()).addPathPatterns("/person/save/*");
+} 
+
+You can find this method inside ApplicationConfig class.
+
+
+We are doing a different approach to register DispatcherServlet like below.
+
+public class WebAppInitializer implements WebApplicationInitializer {
+	public void onStartup(ServletContext servletContext) throws ServletException {  
+        AnnotationConfigWebApplicationContext ctx = new AnnotationConfigWebApplicationContext();  
+        ctx.register(ApplicationConfig.class);  
+        ctx.setServletContext(servletContext);    
+        Dynamic dynamic = servletContext.addServlet("dispatcher", new DispatcherServlet(ctx));  
+        dynamic.addMapping("/");  
+        dynamic.setLoadOnStartup(1);  
+   }  
+} 
